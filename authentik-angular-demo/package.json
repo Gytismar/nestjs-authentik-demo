@@ -1,5 +1,5 @@
 {
-  "name": "angular-authentik-demo",
+  "name": "authentik-angular-demo",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:angular-authentik-demo": "node dist/angular-authentik-demo/server/server.mjs"
+    "serve:ssr:authentik-angular-demo": "node dist/authentik-angular-demo/server/server.mjs"
   },
   "private": true,
   "dependencies": {
@@ -21,6 +21,8 @@
     "@angular/platform-server": "^18.2.0",
     "@angular/router": "^18.2.0",
     "@angular/ssr": "^18.2.4",
+    "@auth0/angular-jwt": "^5.2.0",
+    "angular-oauth2-oidc": "^17.0.2",
     "express": "^4.18.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
