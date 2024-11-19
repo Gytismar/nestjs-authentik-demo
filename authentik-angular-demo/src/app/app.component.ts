@@ -1,22 +1,31 @@
 import { Component } from '@angular/core';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-root',
   template: `
-    <button (click)="getViewer()">Viewer Only</button>
-    <button (click)="getManager()">Manager Only</button>
-    <button (click)="getAuthenticated()">Authenticated Only</button>
+    <h1>Authentik Angular Demo</h1>
+    @if (username) {
+      <h3>Welcome, {{ username }}</h3>
+    }
+    <div>
+      <button (click)="getViewer()">Viewer Only</button>
+      <button (click)="getManager()">Manager Only</button>
+      <button (click)="getAuthenticated()">Authenticated Only</button>
+      <button (click)="getUser()">Get user</button>
+      <button (click)="getLogin()">Login</button>
+    </div>
   `,
   standalone: true,
-  imports: [HttpClientModule],
 })
 export class AppComponent {
+  username?: string;
+
   constructor(private http: HttpClient, private authService: AuthService) {}
 
   ngOnInit() {
-    this.authService.login(); // Automatically trigger login on page load
+    this.username = this.authService.username ?? null;
   }
 
   getViewer() {
@@ -38,5 +47,14 @@ export class AppComponent {
       (data) => console.log(data),
       (error) => console.log(error)
     );
+  }
+
+  getUser() {
+    console.log('token is', this.authService.token);
+    this.username = this.authService.username ?? null;
+  }
+
+  getLogin() {
+    this.authService.login();
   }
 }

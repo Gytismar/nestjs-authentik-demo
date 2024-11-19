@@ -9,8 +9,6 @@ import { routes } from './app.routes';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(),
-    // provideHttpClient(withFetch()),
-    // OAuthService,
     provideOAuthClient(),
     provideRouter(routes),
     {
