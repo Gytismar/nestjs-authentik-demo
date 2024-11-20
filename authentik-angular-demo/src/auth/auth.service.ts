@@ -12,6 +12,17 @@ const authConfig: AuthConfig = {
   oidc: true,
   checkOrigin: false,
 };
+
+// export enum UserRole {
+//   Viewer = 'viewer',
+//   Manager = 'manager',
+// }
+// export interface User {
+//   username: string;
+//   email: string;
+//   roles: UserRole[];
+// }
+
 @Injectable({
   providedIn: 'root',
 })
@@ -21,6 +32,17 @@ export class AuthService {
   }
 
   private configureOAuth() {
+    this.oauthService.events.subscribe({
+      next: (event) => {
+        console.log('OAuth event', event);
+        switch (event.type) {
+          case 'token_received':
+          case 'token_refreshed':
+            /* Do nothing for now */
+            break;
+        }
+      },
+    });
     this.oauthService.configure(authConfig);
     this.oauthService.loadDiscoveryDocumentAndTryLogin();
   }

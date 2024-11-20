@@ -50,7 +50,6 @@ export class AppComponent {
   }
 
   getUser() {
-    console.log('token is', this.authService.token);
     this.username = this.authService.username ?? null;
   }
 

@@ -1,19 +1,18 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { OAuth2Strategy } from './oauth2.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: 'oauth2' })],
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   providers: [
-    AuthService,
-    OAuth2Strategy,
+    JwtStrategy,
     {
       provide: APP_GUARD,
       useClass: RolesGuard, // Global role guard
     },
   ],
+  exports: [PassportModule],
 })
 export class AuthModule {}
