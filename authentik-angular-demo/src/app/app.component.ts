@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth/auth.service';
+import { CommonModule } from '@angular/common';
+import { Permission, User } from '../auth/user.entity';
 
 @Component({
   selector: 'app-root',
@@ -13,19 +15,41 @@ import { AuthService } from '../auth/auth.service';
       <button (click)="getViewer()">Viewer Only</button>
       <button (click)="getManager()">Manager Only</button>
       <button (click)="getAuthenticated()">Authenticated Only</button>
-      <button (click)="getUser()">Get user</button>
       <button (click)="getLogin()">Login</button>
+      <button (click)="getLogout()">Logout</button>
+    </div>
+    <div id='details'>
+      <hr />
+      <div><small>Auth type: {{ authType ?? 'N/A' }}</small></div>
+      <div><small>Username: {{ username ?? 'N/A' }}</small></div>
+      <div><small>Roles: {{ user?.roles?.join(',') ?? 'N/A' }}</small></div>
+      <div>
+        <small>Permissions:</small>
+        @for (p of permissions; track p) {
+          <div>
+            <small style='margin: 10px'>{{ user?.hasPermission(p) ? '+' : '-' }} {{ p }} </small>
+          </div>
+        }
+      </div>
     </div>
   `,
   standalone: true,
+  imports: [CommonModule],
 })
 export class AppComponent {
+  authType?: string;
   username?: string;
+  user?: User;
+  permissions = Object.values(Permission);
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   ngOnInit() {
-    this.username = this.authService.username ?? null;
+    this.authType = this.auth.getAuthType();
+    this.auth.user.subscribe((user) => {
+      this.username = user?.username ?? undefined;
+      this.user = user ?? undefined;
+    });
   }
 
   getViewer() {
@@ -49,11 +73,11 @@ export class AppComponent {
     );
   }
 
-  getUser() {
-    this.username = this.authService.username ?? null;
+  getLogin() {
+    this.auth.login();
   }
 
-  getLogin() {
-    this.authService.login();
+  getLogout() {
+    this.auth.logout();
   }
 }
