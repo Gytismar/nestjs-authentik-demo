@@ -37,10 +37,6 @@ const authConfig: AuthConfig = {
 export class OAuth2Service implements AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
 
-  public get user(): Observable<User | null> {
-    return this.currentUserSubject.asObservable().pipe(distinctUntilChanged());
-  }
-
   constructor(private oauthService: OAuthService) {
     this.configureOAuth();
   }
@@ -53,25 +49,67 @@ export class OAuth2Service implements AuthService {
           case 'discovery_document_loaded':
           case 'token_received':
           case 'token_refreshed':
+            console.log('state', this.oauthService.state);
+            // console.log('decoded state', this.decodeObjectFromBase64(this.oauthService.state ?? ''));
+            if (this.oauthService.state) {
+              const state = this.decodeObjectFromBase64(this.oauthService.state);
+              console.log('decoded state', state);
+            }
+
             this.updateCurrentUser();
             break;
         }
       },
     });
     this.oauthService.configure(authConfig);
+    // this.oauthService.loadDiscoveryDocument();
     this.oauthService.loadDiscoveryDocumentAndTryLogin();
+
     this.oauthService.setupAutomaticSilentRefresh();
     this.updateCurrentUser();
+
+    console.log('state', this.oauthService.state ?? 'N/A');
   }
 
-  public login(): Observable<void> {
-    // this.oauthService.initImplicitFlow();
-    this.oauthService.initCodeFlow();
+  public get user(): Observable<User | null> {
+    return this.currentUserSubject.asObservable().pipe(distinctUntilChanged());
+  }
+
+  public get type(): string {
+    return 'OAuth2';
+  }
+
+  public login(login?: LoginOptions): Observable<void> {
+    const returnTo = login?.returnTo ?? 'SOME-STATE';
+    // this.oauthService.initImplicitFlow('SOME-STATE');
+    let additionalState: string | undefined;
+    if (returnTo) {
+      additionalState = this.encodeObjectToBase64({ returnTo });
+    }
+
+    this.oauthService.initCodeFlow(additionalState);
+    // this.oauthService.tryLoginCodeFlow({
+    //   onTokenReceived: (info) => {
+    //     console.log('OAuth token received, info: ', info);
+    //   }
+    // });
 
     return of();
   }
 
+  private encodeObjectToBase64<T>(state: T): string {
+    const utf8 = new TextEncoder().encode(JSON.stringify(state));
+    return window.btoa(String.fromCharCode(...utf8));
+  }
+
+  private decodeObjectFromBase64<T>(encodedState: string): T {
+    const binary = window.atob(encodedState);
+    const bytes = new Uint8Array(binary.split('').map(char => char.charCodeAt(0)));
+    return JSON.parse(new TextDecoder().decode(bytes)) as T;
+  }
+
   public logout(): Observable<void> {
+    // logOut(noRedirectToLogoutUrl: boolean, state: string): void;
     const logoutPromise = this.oauthService.revokeTokenAndLogout(
       {
         client_id: this.oauthService.clientId,
@@ -81,16 +119,6 @@ export class OAuth2Service implements AuthService {
     );
 
     return from(logoutPromise);
-  }
-
-  public hasPermission(permission: Permission): boolean {
-    const user = this.currentUserSubject.value;
-
-    return user ? hasPermission(user, permission) : false;
-  }
-
-  public getAuthType(): string {
-    return 'OAuth2';
   }
 
   private updateCurrentUser() {
@@ -147,6 +175,10 @@ export class OAuth2Service implements AuthService {
   }
 }
 
+export interface LoginOptions {
+  returnTo?: string;
+}
+
 @Injectable({
   providedIn: 'root',
   // useClass: AuthService,
@@ -155,9 +187,8 @@ export class OAuth2Service implements AuthService {
   useExisting: OAuth2Service,
 })
 export abstract class AuthService {
-  public abstract login(): Observable<void>;
-  public abstract logout(): Observable<void>;
   public abstract get user(): Observable<User | null>;
-  public abstract hasPermission(permission: Permission): boolean;
-  public abstract getAuthType(): string;
+  public abstract get type(): string;
+  public abstract login(options?: LoginOptions): Observable<void>;
+  public abstract logout(): Observable<void>;
 }
