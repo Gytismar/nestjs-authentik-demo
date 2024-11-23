@@ -14,10 +14,12 @@ import {
   Role,
   User,
 } from './user.entity';
+import { Router } from '@angular/router';
 
 const authConfig: AuthConfig = {
   issuer: 'http://localhost/application/o/netix/' /*AUTHENTIK_ISSUER_URL */,
-  redirectUri: window.location.origin + '/' /* or 'http://localhost:4200/' */,
+  redirectUri:
+    window.location.origin + '/auth/callback' /* or 'http://localhost:4200/' */,
   clientId:
     'NIC1m9rgpXsmX4jXaC13qFAsIaMFv2TmQxSrgLsF' /* AUTHENTIK_CLIENT_ID */,
   responseType: 'code',
@@ -37,7 +39,7 @@ const authConfig: AuthConfig = {
 export class OAuth2Service implements AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
 
-  constructor(private oauthService: OAuthService) {
+  constructor(private router: Router, private oauthService: OAuthService) {
     this.configureOAuth();
   }
 
@@ -47,21 +49,34 @@ export class OAuth2Service implements AuthService {
         console.log('OAuth event', event);
         switch (event.type) {
           case 'discovery_document_loaded':
-          case 'token_received':
-          case 'token_refreshed':
-            if (this.oauthService.state) {
-              console.log('decoding state string', this.oauthService.state);
-              const state = this.decodeStateFromURIandBase64(this.oauthService.state);
-              console.log('decoded state', state);
-            }
-
             this.updateCurrentUser();
             break;
+          case 'token_received':
+            this.updateCurrentUser();
+            break;
+          case 'token_refreshed':
+            this.updateCurrentUser();
+            if (this.router.url.startsWith('/auth/callback')) {
+              if (this.oauthService.state) {
+                const { returnTo } = this.decodeStateFromURIandBase64<{
+                  returnTo: string;
+                }>(this.oauthService.state);
+
+                this.router.navigate([returnTo]);
+              } else {
+                this.router.navigate(['/']);
+              }
+            }
+
+            break;
+          case 'token_refresh_error':
+            if (this.router.url.startsWith('/auth/callback')) {
+              this.router.navigate(['/']);
+            }
         }
       },
     });
     this.oauthService.configure(authConfig);
-    // this.oauthService.loadDiscoveryDocument();
     this.oauthService.loadDiscoveryDocumentAndTryLogin();
 
     this.oauthService.setupAutomaticSilentRefresh();
@@ -77,8 +92,8 @@ export class OAuth2Service implements AuthService {
   }
 
   public login(login?: LoginOptions): Observable<void> {
-    const returnTo = login?.returnTo ?? 'SOME-STATE';
-    // this.oauthService.initImplicitFlow('SOME-STATE');
+    const returnTo = login?.returnTo;
+
     let additionalState: string | undefined;
     if (returnTo) {
       console.log('encoding returnTo=', returnTo);
@@ -86,6 +101,8 @@ export class OAuth2Service implements AuthService {
     }
 
     this.oauthService.initCodeFlow(additionalState);
+
+    this.router.navigate(['/auth/login']);
 
     return of();
   }
@@ -102,7 +119,6 @@ export class OAuth2Service implements AuthService {
   }
 
   public logout(): Observable<void> {
-    // logOut(noRedirectToLogoutUrl: boolean, state: string): void;
     const logoutPromise = this.oauthService.revokeTokenAndLogout(
       {
         client_id: this.oauthService.clientId,
