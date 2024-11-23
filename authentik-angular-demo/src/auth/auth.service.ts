@@ -49,10 +49,9 @@ export class OAuth2Service implements AuthService {
           case 'discovery_document_loaded':
           case 'token_received':
           case 'token_refreshed':
-            console.log('state', this.oauthService.state);
-            // console.log('decoded state', this.decodeObjectFromBase64(this.oauthService.state ?? ''));
             if (this.oauthService.state) {
-              const state = this.decodeObjectFromBase64(this.oauthService.state);
+              console.log('decoding state string', this.oauthService.state);
+              const state = this.decodeStateFromURIandBase64(this.oauthService.state);
               console.log('decoded state', state);
             }
 
@@ -67,8 +66,6 @@ export class OAuth2Service implements AuthService {
 
     this.oauthService.setupAutomaticSilentRefresh();
     this.updateCurrentUser();
-
-    console.log('state', this.oauthService.state ?? 'N/A');
   }
 
   public get user(): Observable<User | null> {
@@ -84,28 +81,24 @@ export class OAuth2Service implements AuthService {
     // this.oauthService.initImplicitFlow('SOME-STATE');
     let additionalState: string | undefined;
     if (returnTo) {
-      additionalState = this.encodeObjectToBase64({ returnTo });
+      console.log('encoding returnTo=', returnTo);
+      additionalState = this.encodeStateToBase64({ returnTo });
     }
 
     this.oauthService.initCodeFlow(additionalState);
-    // this.oauthService.tryLoginCodeFlow({
-    //   onTokenReceived: (info) => {
-    //     console.log('OAuth token received, info: ', info);
-    //   }
-    // });
 
     return of();
   }
 
-  private encodeObjectToBase64<T>(state: T): string {
-    const utf8 = new TextEncoder().encode(JSON.stringify(state));
-    return window.btoa(String.fromCharCode(...utf8));
+  private encodeStateToBase64<T>(state: T): string {
+    const encodedString = btoa(JSON.stringify(state));
+    return encodedString;
   }
 
-  private decodeObjectFromBase64<T>(encodedState: string): T {
-    const binary = window.atob(encodedState);
-    const bytes = new Uint8Array(binary.split('').map(char => char.charCodeAt(0)));
-    return JSON.parse(new TextDecoder().decode(bytes)) as T;
+  private decodeStateFromURIandBase64<T>(encodedState: string): T {
+    const urlDecodedString = decodeURIComponent(encodedState);
+    const decodedObj = JSON.parse(atob(urlDecodedString)) as T;
+    return decodedObj;
   }
 
   public logout(): Observable<void> {

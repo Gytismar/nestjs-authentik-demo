@@ -4,16 +4,20 @@ import { map, Observable, take } from "rxjs";
 import { AuthService } from "./auth.service";
 import { Permission, Role } from "./user.entity";
 
-export const canActivateWithAuth: CanActivateFn = (): Observable<boolean> | boolean => {
+export const canActivateWithAuth: CanActivateFn = (route, state): Observable<boolean> | boolean => {
   const auth = inject(AuthService);
 
+  // TODO: remove these console.log statements
+  console.log('[canActivateWithAuth] route.url', route.url);
+  console.log('[canActivateWithAuth] state.url', state.url);
+  
   return auth.user.pipe(
     take(1),
     map((user) => {
       if (user) {
         return true;
       } else {
-        auth.login();
+        auth.login({ returnTo: state.url});
         return false;
       }
     })
