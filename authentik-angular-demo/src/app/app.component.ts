@@ -40,9 +40,15 @@ import { RouterOutlet } from '@angular/router';
       <div>
         @if (apiResponse) {
         <div><small>Response:</small></div>
-        <div style="margin-left: 10px"><small>OK: {{ apiResponse.ok }}</small></div>
-        <div style="margin-left: 10px"><small>Status: {{ apiResponse.status }}</small></div>
-        <div style="margin-left: 10px"><small>Message: {{ apiResponse.message }}</small></div>
+        <div style="margin-left: 10px">
+          <small>OK: {{ apiResponse.ok }}</small>
+        </div>
+        <div style="margin-left: 10px">
+          <small>Status: {{ apiResponse.status }}</small>
+        </div>
+        <div style="margin-left: 10px">
+          <small>Message: {{ apiResponse.message }}</small>
+        </div>
         }
       </div>
     </div>
@@ -101,20 +107,20 @@ export class AppComponent {
   }
 
   makeApiCall(url: string) {
-    this.http.get(url).subscribe(
-      (data) => {
-        this.apiResponse = { ok: true, status: 200, message: 'Success' };
+    this.http.get(url, { responseType: 'text' }).subscribe({
+      next: (data) => {
+        this.apiResponse = { ok: true, status: 200, message: data };
         console.log(data);
       },
-      (error) => {
+      error: (error) => {
         this.apiResponse = {
           ok: false,
           status: error.status,
           message: error.message,
         };
         console.log(error);
-      }
-    );
+      },
+    });
   }
 
   getLogin() {
