@@ -39,8 +39,9 @@ export class FakeAuthService implements AuthService {
   }
 
   public get type(): string {
-    return 'FakeOAuth2';
+    return 'FakeAuth';
   }
+
 
   public login(_options?: LoginOptions): Observable<void> {
     if (this.config.user) {

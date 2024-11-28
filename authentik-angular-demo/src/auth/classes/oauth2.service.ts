@@ -191,6 +191,10 @@ export class OAuth2Service implements AuthService {
     return this.router.url.startsWith(this.config.authCallbackRoutePath);
   }
 
+  private isAtLoginLoadingRoute(): boolean {
+    return this.router.url.startsWith(this.config.loginLoadingRoutePath);
+  }
+
   public isReady(timeoutMs?: number): Observable<boolean> {
     return new Observable<boolean>((subscriber) => {
       const subscription = this.isReadySubject.subscribe((ready) => {
@@ -231,8 +235,8 @@ export class OAuth2Service implements AuthService {
     const observable = this.isReady(this.config.authTimeout).pipe(
       switchMap((isReady) => {
         if (!isReady) {
-          this.log('Login not ready');
-          return of();
+          this.log('Not ready for login');
+          throw new Error('OAuth2Service failed to start the login process');
         }
 
         const returnTo = options?.returnTo;
@@ -244,7 +248,9 @@ export class OAuth2Service implements AuthService {
 
         this.oauthService.initCodeFlow(additionalState);
 
-        this.router.navigate([this.config.loginLoadingRoutePath]);
+        if (this.isAtLoginLoadingRoute()) {
+          this.router.navigate([this.config.loginLoadingRoutePath]);
+        }
 
         this.log('Login process started');
         return of();
@@ -253,7 +259,7 @@ export class OAuth2Service implements AuthService {
 
     observable.subscribe({
       error: (error) => {
-        this.logError('Login error:', error);
+        this.logError('Login error:', error.message);
       },
     });
 
