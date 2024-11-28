@@ -1,11 +1,17 @@
 import { Router } from '@angular/router';
-import { AuthConfig, OAuthService, OAuthEvent } from 'angular-oauth2-oidc';
+import {
+  AuthConfig,
+  OAuthService,
+  OAuthEvent,
+  EventType,
+} from 'angular-oauth2-oidc';
 import {
   BehaviorSubject,
   Observable,
   distinctUntilChanged,
   of,
   from,
+  switchMap,
 } from 'rxjs';
 import { AuthService, LoginOptions } from '../auth.service';
 import { User } from '../user.entity';
@@ -32,6 +38,10 @@ export interface OAuth2ServiceConfig {
    */
   scope: string;
   /**
+   * Function that maps claims in the token to a User object
+   */
+  claimsToUserMapper: (claims: Record<string, any>) => User;
+  /**
    * Default: `false`
    */
   useDebugLogging?: boolean;
@@ -48,31 +58,31 @@ export interface OAuth2ServiceConfig {
    */
   authCallbackRoutePath?: string;
   /**
-   * Function that maps claims in the token to a User object
+   * Default: `5000`
    */
-  claimsToUserMapper: (claims: Record<string, any>) => User;
+  authTimeout?: number;
 }
 
 export class OAuth2Service implements AuthService {
   private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
   private readonly isReadySubject = new BehaviorSubject<boolean>(false);
   private readonly config: Required<OAuth2ServiceConfig>;
+  private readonly defaultConfig = {
+    useDebugLogging: false,
+    defaultLoginRedirectTo: '/',
+    loginLoadingRoutePath: '/auth/login',
+    authCallbackRoutePath: '/auth/callback',
+    authTimeout: 5000,
+  };
 
   constructor(
     oAuth2Config: OAuth2ServiceConfig,
     private readonly router: Router,
     private readonly oauthService: OAuthService
   ) {
-    console.log('OAuth2Service instance created');
-
     this.config = {
+      ...this.defaultConfig,
       ...oAuth2Config,
-      useDebugLogging: oAuth2Config.useDebugLogging ?? false,
-      defaultLoginRedirectTo: oAuth2Config.defaultLoginRedirectTo ?? '/',
-      loginLoadingRoutePath:
-        oAuth2Config.loginLoadingRoutePath ?? '/auth/login',
-      authCallbackRoutePath:
-        oAuth2Config.authCallbackRoutePath ?? '/auth/callback',
     };
 
     this.configureOAuth(
@@ -89,6 +99,8 @@ export class OAuth2Service implements AuthService {
       },
       this.handleOAuthEvent.bind(this)
     );
+
+    this.log('Instance created');
   }
 
   private configureOAuth(
@@ -104,30 +116,58 @@ export class OAuth2Service implements AuthService {
   }
 
   private handleOAuthEvent(event: OAuthEvent) {
-    console.log('OAuth event', event);
+    this.log('OAuthEvent:', event);
 
-    switch (event.type) {
-      case 'discovery_document_load_error':
-        this.isReadySubject.next(false);
-        break;
-      case 'discovery_document_loaded':
-        this.isReadySubject.next(true);
-        this.updateCurrentUser();
-        break;
-      case 'token_received':
-        this.updateCurrentUser();
-        break;
-      case 'token_refreshed':
-        this.updateCurrentUser();
-        this.handleTokenRefreshed();
-        break;
-      case 'token_refresh_error':
-        this.handleTokenRefreshError();
-        break;
+    const eventHandlers: Record<EventType, (() => void) | undefined> = {
+      ['discovery_document_load_error']: this.handleDiscoveryDocumentLoadError,
+      ['discovery_document_loaded']: this.handleDiscoveryDocumentLoaded,
+      ['token_received']: this.handleTokenReceived,
+      ['token_refreshed']: this.handleTokenRefreshed,
+      ['token_refresh_error']: this.handleTokenRefreshError,
+      ['jwks_load_error']: undefined,
+      ['invalid_nonce_in_state']: undefined,
+      ['discovery_document_validation_error']: undefined,
+      ['user_profile_loaded']: undefined,
+      ['user_profile_load_error']: undefined,
+      ['token_error']: undefined,
+      ['code_error']: undefined,
+      ['silent_refresh_error']: undefined,
+      ['silently_refreshed']: undefined,
+      ['silent_refresh_timeout']: undefined,
+      ['token_validation_error']: undefined,
+      ['token_expires']: undefined,
+      ['session_changed']: undefined,
+      ['session_error']: undefined,
+      ['session_terminated']: undefined,
+      ['session_unchanged']: undefined,
+      ['logout']: undefined,
+      ['popup_closed']: undefined,
+      ['popup_blocked']: undefined,
+      ['token_revoke_error']: undefined,
+    };
+
+    const handler = eventHandlers[event.type];
+    if (handler) {
+      handler.call(this);
     }
   }
 
+  private handleDiscoveryDocumentLoadError() {
+    this.isReadySubject.next(false);
+  }
+
+  private handleDiscoveryDocumentLoaded() {
+    this.isReadySubject.next(true);
+    this.updateCurrentUser();
+  }
+
+  private handleTokenReceived() {
+    this.updateCurrentUser();
+  }
+
   private handleTokenRefreshed() {
+    this.updateCurrentUser();
+
     if (this.isAtCallbackRoute()) {
       if (this.oauthService.state) {
         const { returnTo } = this.decodeStateFromURIandBase64<{
@@ -186,21 +226,43 @@ export class OAuth2Service implements AuthService {
   }
 
   public login(options?: LoginOptions): Observable<void> {
-    const returnTo = options?.returnTo;
+    this.log('Login requested');
 
-    let additionalState: string | undefined;
-    if (returnTo) {
-      additionalState = this.encodeStateToBase64({ returnTo });
-    }
+    const observable = this.isReady(this.config.authTimeout).pipe(
+      switchMap((isReady) => {
+        if (!isReady) {
+          this.log('Login not ready');
+          return of();
+        }
 
-    this.oauthService.initCodeFlow(additionalState);
+        const returnTo = options?.returnTo;
 
-    this.router.navigate([this.config.loginLoadingRoutePath]);
+        let additionalState: string | undefined;
+        if (returnTo) {
+          additionalState = this.encodeStateToBase64({ returnTo });
+        }
 
-    return of();
+        this.oauthService.initCodeFlow(additionalState);
+
+        this.router.navigate([this.config.loginLoadingRoutePath]);
+
+        this.log('Login process started');
+        return of();
+      })
+    );
+
+    observable.subscribe({
+      error: (error) => {
+        this.logError('Login error:', error);
+      },
+    });
+
+    return observable;
   }
 
   public logout(): Observable<void> {
+    this.log('Logout requested');
+
     const logoutPromise = this.oauthService.revokeTokenAndLogout(
       {
         client_id: this.oauthService.clientId,
@@ -218,18 +280,19 @@ export class OAuth2Service implements AuthService {
   }
 
   private decodeStateFromURIandBase64<T>(encodedState: string): T {
-    console.log('encodedState', encodedState);
     const urlDecodedString = decodeURIComponent(encodedState);
-    console.log('urlDecodedString', urlDecodedString);
     const decodedObj = JSON.parse(atob(urlDecodedString)) as T;
-    console.log('decodedObj', decodedObj);
     return decodedObj;
   }
 
   private updateCurrentUser() {
+    this.log('Updating current user');
+
     const claims = this.oauthService.getIdentityClaims();
 
     if (!claims) {
+      this.log('No claims found, setting current user to null');
+
       this.currentUserSubject.next(null);
 
       return;
@@ -238,5 +301,19 @@ export class OAuth2Service implements AuthService {
     const user = this.config.claimsToUserMapper(claims);
 
     this.currentUserSubject.next(user);
+
+    this.log('Current user updated:', user);
+  }
+
+  private log(message: any, ...optionalParams: any[]) {
+    if (!this.config.useDebugLogging) {
+      return;
+    }
+
+    console.log('[OAuth2Service]', message, ...optionalParams);
+  }
+
+  private logError(message: any, ...optionalParams: any[]) {
+    console.error('[OAuth2Service]', message, ...optionalParams);
   }
 }

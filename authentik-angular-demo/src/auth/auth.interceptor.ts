@@ -9,7 +9,8 @@ export const authInterceptorFn: HttpInterceptorFn = (req, next) => {
   if (!req.url.includes('/api/')) {
     return next(req);
   }
-  // console.log('intercepted by auth interceptor');
+
+  // console.log('intercepted by auth interceptor'); // For debugging
 
   const token = inject(JwtService).getToken();
   if (token) {

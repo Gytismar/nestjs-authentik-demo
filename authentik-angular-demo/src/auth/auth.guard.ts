@@ -9,7 +9,8 @@ import { map, Observable, of, switchMap, take } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Permission, Role } from './user.entity';
 
-const AUTH_TIMEOUT = 5000;
+const USE_DEBUG_LOGGING = true;
+const NOT_AUTHORIZED_REDIRECT = '/error/403';
 
 export const canActivateWithAuth: CanActivateFn = (
   _route,
@@ -17,23 +18,20 @@ export const canActivateWithAuth: CanActivateFn = (
 ): Observable<boolean> | boolean => {
   const auth = inject(AuthService);
 
-  return auth.isReady(AUTH_TIMEOUT).pipe(
-    switchMap((isReady) => {
-      if (!isReady) {
-        return of(false);
+  return auth.user.pipe(
+    take(1),
+    map((user) => {
+      if (user) {
+        return true;
+      } else {
+        if (USE_DEBUG_LOGGING) {
+          console.log(
+            `User is not authenticated, calling login with returnTo: ${state.url}`
+          );
+        }
+        auth.login({ returnTo: state.url });
+        return false;
       }
-
-      return auth.user.pipe(
-        take(1),
-        map((user) => {
-          if (user) {
-            return true;
-          } else {
-            auth.login({ returnTo: state.url });
-            return false;
-          }
-        })
-      );
     })
   );
 };
@@ -45,34 +43,20 @@ export const canActivateWithRole: (allowedRoles: Role[]) => CanActivateFn =
     const auth = inject(AuthService);
     const router = inject(Router);
 
-    // return auth.user.pipe(
-    //   take(1),
-    //   map((user) => {
-    //     if (user?.roles.some(role => allowedRoles.includes(role))) {
-    //       return true;
-    //     } else {
-    //       router.navigate(['/error/403']);
-    //       return false;
-    //     }
-    //   })
-    // );
-    return auth.isReady(AUTH_TIMEOUT).pipe(
-      switchMap((isReady) => {
-        if (!isReady) {
-          return of(false);
+    return auth.user.pipe(
+      take(1),
+      map((user) => {
+        if (user?.roles.some((role) => allowedRoles.includes(role))) {
+          return true;
+        } else {
+          if (USE_DEBUG_LOGGING) {
+            console.log(
+              `User does not have an appropriate role, redirecting to ${NOT_AUTHORIZED_REDIRECT}`
+            );
+          }
+          router.navigate([NOT_AUTHORIZED_REDIRECT]);
+          return false;
         }
-
-        return auth.user.pipe(
-          take(1),
-          map((user) => {
-            if (user?.roles.some((role) => allowedRoles.includes(role))) {
-              return true;
-            } else {
-              router.navigate(['/error/403']);
-              return false;
-            }
-          })
-        );
       })
     );
   };
@@ -86,51 +70,25 @@ export const canActivateWithPermission: (
     const auth = inject(AuthService);
     const router = inject(Router);
 
-    // return auth.user.pipe(
-    //   take(1),
-    //   map((user) => {
-    //     if (
-    //       user &&
-    //       requiredPermissions.every((permission) =>
-    //         user.hasPermission(permission)
-    //       )
-    //     ) {
-    //       return true;
-    //     } else {
-    //       console.log(
-    //         'User does not have permission, redirecting to /error/403'
-    //       );
-    //       router.navigate(['/error/403']);
-    //       return false;
-    //     }
-    //   })
-    // );
-
-    return auth.isReady(AUTH_TIMEOUT).pipe(
-      switchMap((isReady) => {
-        if (!isReady) {
-          return of(false);
+    return auth.user.pipe(
+      take(1),
+      map((user) => {
+        if (
+          user &&
+          requiredPermissions.every((permission) =>
+            user.hasPermission(permission)
+          )
+        ) {
+          return true;
+        } else {
+          if (USE_DEBUG_LOGGING) {
+            console.log(
+              `User does not have permission, redirecting to ${NOT_AUTHORIZED_REDIRECT}`
+            );
+          }
+          router.navigate([NOT_AUTHORIZED_REDIRECT]);
+          return false;
         }
-
-        return auth.user.pipe(
-          take(1),
-          map((user) => {
-            if (
-              user &&
-              requiredPermissions.every((permission) =>
-                user.hasPermission(permission)
-              )
-            ) {
-              return true;
-            } else {
-              console.log(
-                'User does not have permission, redirecting to /error/403'
-              );
-              router.navigate(['/error/403']);
-              return false;
-            }
-          })
-        );
       })
     );
   };

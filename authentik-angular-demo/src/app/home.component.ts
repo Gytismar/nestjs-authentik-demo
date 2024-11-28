@@ -21,7 +21,7 @@ import { RouterLink } from '@angular/router';
         @if (user) {
         <button (click)="getLogout()">Logout</button>
         } @else {
-        <button (click)="getLogin()" [disabled]="!authIsReady">Login</button>
+        <button (click)="getLogin()">Login</button>
         }
       </div>
     </div>
@@ -76,7 +76,6 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
 })
 export class HomeComponent {
-  authIsReady = false;
   authType?: string;
   user?: User;
   permissions = Object.values(Permission);
@@ -86,9 +85,7 @@ export class HomeComponent {
 
   ngOnInit() {
     this.authType = this.auth.type;
-    this.auth.isReady().subscribe((isReady) => {
-      this.authIsReady = isReady;
-    });
+ 
     this.auth.user.subscribe((user) => {
       this.user = user ?? undefined;
     });
