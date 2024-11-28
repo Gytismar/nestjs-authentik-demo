@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth/auth.service';
 import { Permission, User } from '../auth/user.entity';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -12,14 +13,15 @@ import { Permission, User } from '../auth/user.entity';
     }
     <div id="navigation">
       <h3>Navigation</h3>
-      <div><a href="/">Home page</a></div>
-      <div><a href="/needs-permission">Needs permission page</a></div>
+      <div><a routerLink="/">Home page</a></div>
+      <div><a href="/needs-permission">(Href) Needs permission page</a></div>
+      <div><a routerLink="/needs-permission"> (RouterLink) Needs permission page</a></div>
       <br />
       <div>
         @if (user) {
         <button (click)="getLogout()">Logout</button>
         } @else {
-        <button (click)="getLogin()">Login</button>
+        <button (click)="getLogin()" [disabled]="!authIsReady">Login</button>
         }
       </div>
     </div>
@@ -71,8 +73,10 @@ import { Permission, User } from '../auth/user.entity';
     </div>
   `,
   standalone: true,
+  imports: [RouterLink],
 })
 export class HomeComponent {
+  authIsReady = false;
   authType?: string;
   user?: User;
   permissions = Object.values(Permission);
@@ -82,6 +86,9 @@ export class HomeComponent {
 
   ngOnInit() {
     this.authType = this.auth.type;
+    this.auth.isReady().subscribe((isReady) => {
+      this.authIsReady = isReady;
+    });
     this.auth.user.subscribe((user) => {
       this.user = user ?? undefined;
     });

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { NeedsPermissionComponent } from './needs-permission/needs-permission.component';
-import { canActivateChildWithPermission, canActivateWithAuth } from '../auth/auth.guard';
+import { canActivateWithAuth, canActivateWithPermission } from '../auth/auth.guard';
 import { Permission } from '../auth/user.entity';
 import { HomeComponent } from './home.component';
 import { ErrorPageComponent } from './error-page/error-page.component';
@@ -16,7 +16,7 @@ export const routes: Routes = [
     path: 'needs-permission',
     title: 'Needs Permission',
     component: NeedsPermissionComponent,
-    canActivate: [canActivateWithAuth, canActivateChildWithPermission([Permission.ReadTitleDetails])],
+    canActivate: [canActivateWithAuth, canActivateWithPermission([Permission.ReadTitleDetails])],
   },
   {
     path: 'auth',

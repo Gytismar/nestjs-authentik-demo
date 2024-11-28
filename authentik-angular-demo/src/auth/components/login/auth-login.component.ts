@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-auth-login',
@@ -23,7 +24,7 @@ import { Component, OnInit } from '@angular/core';
 export class AuthLogin implements OnInit {
   infoMessage = 'Loading...';
 
-  constructor() {}
+  constructor(private readonly auth: AuthService) {}
 
   ngOnInit(): void {}
 }
