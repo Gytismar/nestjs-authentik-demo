@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as jwksClient from 'jwks-rsa';
-import { AuthentikJwtPayloadMapper } from './mappings/authentik-jwt-payload.mapper';
+import { AuthentikJwtPayloadMapper } from '../mappings/authentik-jwt-payload.mapper';
 
 export interface JwtStrategyConfig {
   issuerURL: string;
@@ -22,7 +22,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       audience: config.clientID,
       issuer: config.issuerURL,
-      algorithms: ['RS256'],
       passReqToCallback: true,
     });
   }
