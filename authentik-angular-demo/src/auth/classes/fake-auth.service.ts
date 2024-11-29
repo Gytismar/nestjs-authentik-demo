@@ -1,6 +1,7 @@
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, switchMap, timer } from 'rxjs';
 import { AuthService, LoginOptions } from '../auth.service';
 import { User, Role } from '../user.entity';
+import { Router } from '@angular/router';
 
 export interface FakeAuthServiceConfig {
   user?: User;
@@ -12,7 +13,10 @@ export class FakeAuthService implements AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isReadySubject = new BehaviorSubject<boolean>(true);
 
-  constructor(private config: FakeAuthServiceConfig) {
+  constructor(
+    private config: FakeAuthServiceConfig,
+    private readonly router: Router
+  ) {
     if (!config.user) {
       config.user = {
         id: 'fake-user-id',
@@ -38,17 +42,24 @@ export class FakeAuthService implements AuthService {
     return this.currentUserSubject.asObservable();
   }
 
-  public get type(): string {
-    return 'FakeAuth';
+  public get type() {
+    return FakeAuthService.getType();
   }
 
+  public static getType(): 'fake' {
+    return 'fake';
+  }
 
-  public login(_options?: LoginOptions): Observable<void> {
-    if (this.config.user) {
-      this.currentUserSubject.next(this.config.user);
-    }
-
-    return of();
+  public login(options?: LoginOptions): Observable<void> {
+    return timer(500).pipe(
+      switchMap(() => {
+        if (this.config.user) {
+          this.currentUserSubject.next(this.config.user);
+        }
+        this.router.navigate([options?.returnTo ?? '/']);
+        return of();
+      })
+    );
   }
 
   public logout(): Observable<void> {

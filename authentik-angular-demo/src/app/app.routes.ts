@@ -1,11 +1,19 @@
 import { Routes } from '@angular/router';
 import { NeedsPermissionComponent } from './needs-permission/needs-permission.component';
-import { canActivateWithAuth, canActivateWithPermission } from '../auth/auth.guard';
+import {
+  canActivateWithAuth,
+  canActivateWithPermission,
+} from '../auth/auth.guard';
 import { Permission } from '../auth/user.entity';
 import { HomeComponent } from './home.component';
 import { ErrorPageComponent } from './error-page/error-page.component';
 import { AuthCallbackComponent } from '../auth/components/callback/auth-callback.component';
-import { AuthLogin } from '../auth/components/login/auth-login.component';
+import { OAuth2Login } from '../auth/components/login/oauth2-login.component';
+import { inject } from '@angular/core';
+import { AuthService } from '../auth/auth.service';
+import { OAuth2Service } from '../auth/classes/oauth2.service';
+import { FakeLogin } from '../auth/components/login/fake-login.component';
+import { FakeAuthService } from '../auth/classes/fake-auth.service';
 
 export const routes: Routes = [
   {
@@ -16,7 +24,10 @@ export const routes: Routes = [
     path: 'needs-permission',
     title: 'Needs Permission',
     component: NeedsPermissionComponent,
-    canActivate: [canActivateWithAuth, canActivateWithPermission([Permission.ReadTitleDetails])],
+    canActivate: [
+      canActivateWithAuth,
+      canActivateWithPermission([Permission.ReadTitleDetails]),
+    ],
   },
   {
     path: 'auth',
@@ -24,7 +35,16 @@ export const routes: Routes = [
       { path: '', redirectTo: '/error/404', pathMatch: 'full' },
       {
         path: 'login',
-        component: AuthLogin,
+        redirectTo: () =>
+          `/auth/login-${inject(AuthService).type.toLowerCase()}`,
+      },
+      {
+        path: 'login-' + OAuth2Service.getType().toLowerCase(),
+        component: OAuth2Login,
+      },
+      {
+        path: 'login-' + FakeAuthService.getType().toLowerCase(),
+        component: FakeLogin,
       },
       {
         path: 'callback',

@@ -5,11 +5,12 @@ import {
   CanActivateFn,
   Router,
 } from '@angular/router';
-import { map, Observable, of, switchMap, take } from 'rxjs';
+import { map, Observable, take } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Permission, Role } from './user.entity';
 
 const USE_DEBUG_LOGGING = true;
+const NOT_AUTHENTICATED_REDIRECT = '/auth/login';
 const NOT_AUTHORIZED_REDIRECT = '/error/403';
 
 export const canActivateWithAuth: CanActivateFn = (
@@ -17,6 +18,7 @@ export const canActivateWithAuth: CanActivateFn = (
   state
 ): Observable<boolean> | boolean => {
   const auth = inject(AuthService);
+  const router = inject(Router);
 
   return auth.user.pipe(
     take(1),
@@ -29,6 +31,7 @@ export const canActivateWithAuth: CanActivateFn = (
             `User is not authenticated, calling login with returnTo: ${state.url}`
           );
         }
+        router.navigate([NOT_AUTHENTICATED_REDIRECT]);
         auth.login({ returnTo: state.url });
         return false;
       }

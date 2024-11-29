@@ -38,4 +38,8 @@ export abstract class AuthService {
   public abstract get type(): string;
   public abstract login(options?: LoginOptions): Observable<void>;
   public abstract logout(): Observable<void>;
+
+  public static getType(): string {
+    throw new Error('Derived classes must implement getType()');
+  }
 }

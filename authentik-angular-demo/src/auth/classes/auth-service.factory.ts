@@ -13,7 +13,7 @@ export class AuthServiceFactory {
     return new OAuth2Service(config, router, oauthService);
   }
 
-  public static makeFake(config: FakeAuthServiceConfig): FakeAuthService {
-    return new FakeAuthService(config);
+  public static makeFake(config: FakeAuthServiceConfig, router: Router): FakeAuthService {
+    return new FakeAuthService(config, router);
   }
 }

@@ -225,7 +225,11 @@ export class OAuth2Service implements AuthService {
     return this.currentUserSubject.asObservable().pipe(distinctUntilChanged());
   }
 
-  public get type(): string {
+  public get type() {
+    return OAuth2Service.getType();
+  }
+
+  public static getType(): 'OAuth2' {
     return 'OAuth2';
   }
 
@@ -236,7 +240,7 @@ export class OAuth2Service implements AuthService {
       switchMap((isReady) => {
         if (!isReady) {
           this.log('Not ready for login');
-          throw new Error('OAuth2Service failed to start the login process');
+          throw new Error('Failed to start the login process with OAuth2');
         }
 
         const returnTo = options?.returnTo;
