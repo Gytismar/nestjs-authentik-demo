@@ -25,7 +25,7 @@ import { AuthService } from '../../auth.service';
 })
 export class FakeLogin implements OnInit {
   isLoading = true;
-  infoMessage = 'Loading...';
+  infoMessage = 'Logging in with fake details...';
 
   constructor(private readonly auth: AuthService) {}
 

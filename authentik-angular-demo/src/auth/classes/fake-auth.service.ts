@@ -1,12 +1,35 @@
 import { BehaviorSubject, Observable, of, switchMap, timer } from 'rxjs';
 import { AuthService, LoginOptions } from '../auth.service';
-import { User, Role } from '../user.entity';
+import {
+  User,
+  Role,
+  hasPermission,
+  Permission,
+  PermissionStrings,
+} from '../user.entity';
 import { Router } from '@angular/router';
 
 export interface FakeAuthServiceConfig {
+  /**
+   * Uses default user details. Can be overridden by `userOverrides`.
+   */
   user?: User;
+  /**
+   * Default: `true`
+   */
   isReady?: boolean;
+  /**
+   * Default: `false`
+   */
   loggedIn?: boolean;
+  /**
+   * Overrides for the default user details.
+   */
+  userOverrides?: Partial<User>;
+  /**
+   * Default: `/auth/login`
+   */
+  loginPath?: string;
 }
 
 export class FakeAuthService implements AuthService {
@@ -19,22 +42,33 @@ export class FakeAuthService implements AuthService {
   ) {
     if (!config.user) {
       config.user = {
-        id: 'fake-user-id',
-        username: 'fake-username',
-        email: 'fakeuser@mail.mail',
-        roles: [Role.Manager],
-        hasPermission: (_) => true,
+        id: 'fake-user-id-123',
+        username: 'mrfake',
+        email: 'mrfaker@fake.mail',
+        roles: [...Object.values(Role)],
+        hasPermission: (permission: Permission | PermissionStrings) =>
+          hasPermission(config.user!, permission),
       };
     }
 
+    if (config.userOverrides) {
+      config.user = { ...config.user, ...config.userOverrides };
+    }
+
     if (config.loggedIn) {
-      this.currentUserSubject.next(config.user);
+      this.updateUser(config.user);
+    }
+
+    if (!config.loginPath) {
+      config.loginPath = '/auth/login';
     }
 
     this.isReadySubject.next(config.isReady ?? true);
+
+    this.log('created');
   }
 
-  public isReady(timeoutMs?: number): Observable<boolean> {
+  public isReady(_timeoutMs?: number): Observable<boolean> {
     return this.isReadySubject.asObservable();
   }
 
@@ -51,20 +85,35 @@ export class FakeAuthService implements AuthService {
   }
 
   public login(options?: LoginOptions): Observable<void> {
-    return timer(500).pipe(
+    this.log('Login requested');
+    this.router.navigate([this.config.loginPath]);
+    const observable = timer(500).pipe(
       switchMap(() => {
         if (this.config.user) {
-          this.currentUserSubject.next(this.config.user);
+          this.updateUser(this.config.user);
         }
         this.router.navigate([options?.returnTo ?? '/']);
         return of();
       })
     );
+
+    observable.subscribe();
+
+    return observable;
   }
 
   public logout(): Observable<void> {
-    this.currentUserSubject.next(null);
+    this.updateUser(null);
 
     return of();
+  }
+
+  private updateUser(user: User | null) {
+    this.log('Current user updated:', user);
+    this.currentUserSubject.next(user);
+  }
+
+  private log(message: any, ...optionalParams: any[]) {
+    console.log('[FakeAuthService]', message, ...optionalParams);
   }
 }

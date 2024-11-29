@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-// import { jwtDecode } from "jwt-decode";
 
 @Injectable({ providedIn: 'root' })
 export class JwtService {
@@ -13,14 +12,6 @@ export class JwtService {
   saveToken(token: string): void {
     this.storage.setItem(this.jwtTokenKey, token);
   }
-
-  // isTokenExpired(): boolean {
-  //   const token = this.getToken();
-  //   if (!token) return true;
-
-  //   const decoded: any = jwtDecode(token);
-  //   return decoded.exp < Date.now() / 1000;
-  // }
 
   clearToken(): void {
     this.storage.removeItem(this.jwtTokenKey);
