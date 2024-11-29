@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { APP_GUARD } from '@nestjs/core';
-import { RolesGuard } from './roles.guard';
 import { JwtStrategy } from './jwt.strategy';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   providers: [
-    JwtStrategy,
     {
-      provide: APP_GUARD,
-      useClass: RolesGuard, // Global role guard
+      provide: JwtStrategy,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        return new JwtStrategy({
+          issuerURL: config.getOrThrow('OAUTH2_ISSUER_URL'),
+          jwksURL: config.getOrThrow('OAUTH2_JWKS_URL'),
+          clientID: config.getOrThrow('OAUTH2_CLIEND_ID'),
+        });
+      },
     },
   ],
   exports: [PassportModule],

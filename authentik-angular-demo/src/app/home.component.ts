@@ -32,6 +32,8 @@ import { RouterLink } from '@angular/router';
         <button (click)="getViewer()">Viewer Only</button>
         <button (click)="getManager()">Manager Only</button>
         <button (click)="getAuthenticated()">Authenticated Only</button>
+        <button (click)="getTitleDetails()">Only if can read title details</button>
+        <button (click)="getTitle()">Only if can read titles</button>
       </div>
       <div>
         @if (apiResponse) {
@@ -101,6 +103,14 @@ export class HomeComponent {
 
   getAuthenticated() {
     this.makeApiCall('http://localhost:3000/api/for-any-authenticated-user');
+  }
+
+  getTitleDetails() {
+    this.makeApiCall('http://localhost:3000/api/can-read-title-details');
+  }
+
+  getTitle() {
+    this.makeApiCall('http://localhost:3000/api/can-read-titles');
   }
 
   makeApiCall(url: string) {

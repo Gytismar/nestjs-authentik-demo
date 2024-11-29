@@ -4,7 +4,7 @@ import { Role } from "../auth/user.entity";
 
 export const environment = {
   production: false,
-  useFakeAuth: true,
+  useFakeAuth: false,
   fakeAuthConfig: {
     loggedIn: true,
     userOverrides: {

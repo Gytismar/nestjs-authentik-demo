@@ -2,31 +2,39 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as jwksClient from 'jwks-rsa';
+import { AuthentikJwtPayloadMapper } from './mappings/authentik-jwt-payload.mapper';
 
-const authConfig = {
-  issuerURL: 'http://localhost/application/o/netix/',
-  jwksURL: 'http://localhost/application/o/netix/jwks/',
-  clienID: 'add if needed',
-};
+export interface JwtStrategyConfig {
+  issuerURL: string;
+  jwksURL: string;
+  clientID: string;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(config: JwtStrategyConfig) {
     super({
       secretOrKeyProvider: jwksClient.passportJwtSecret({
         cache: true,
         rateLimit: false,
-        jwksUri: authConfig.jwksURL,
+        jwksUri: config.jwksURL,
       }),
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      // audience: authConfig.clienID, /* probably not needed */
-      issuer: authConfig.issuerURL,
+      audience: config.clientID,
+      issuer: config.issuerURL,
       algorithms: ['RS256'],
+      passReqToCallback: true,
     });
   }
 
-  validate(payload: unknown): unknown {
-    // console.log('jwt payload:', payload);
-    return payload;
+  validate(_request: any, jwt_payload: any, done_callback: any) {
+    if (jwt_payload != null) {
+      const user = AuthentikJwtPayloadMapper.payload2User(jwt_payload);
+      jwt_payload['user'] = user;
+
+      return user;
+    }
+
+    return done_callback(null, jwt_payload);
   }
 }
