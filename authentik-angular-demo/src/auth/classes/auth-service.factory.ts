@@ -3,6 +3,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import { OAuth2Service } from './oauth2.service';
 import { FakeAuthServiceConfig, FakeAuthService } from './fake-auth.service';
 import { OAuth2ServiceConfig } from './oauth2.service';
+import { JwtService } from '../jwt.service';
 
 export class AuthServiceFactory {
   public static makeOAuth2(
@@ -13,7 +14,7 @@ export class AuthServiceFactory {
     return new OAuth2Service(config, router, oauthService);
   }
 
-  public static makeFake(config: FakeAuthServiceConfig, router: Router): FakeAuthService {
-    return new FakeAuthService(config, router);
+  public static makeFake(config: FakeAuthServiceConfig, router: Router, jwt: JwtService): FakeAuthService {
+    return new FakeAuthService(config, router, jwt);
   }
 }

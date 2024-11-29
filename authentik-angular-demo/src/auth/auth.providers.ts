@@ -5,14 +5,15 @@ import { Router } from '@angular/router';
 import { AuthServiceFactory } from './classes/auth-service.factory';
 import { ClaimsToUserMapper } from './mappings/claims-to-user.mapper';
 import { environment } from '../environments/environment';
+import { JwtService } from './jwt.service';
 
 export const authProviders: (Provider | EnvironmentProviders)[] = [
   provideOAuthClient(),
   {
     provide: AuthService,
-    useFactory: (router: Router, oauthService: OAuthService) => {
+    useFactory: (router: Router, oauthService: OAuthService, jwt: JwtService) => {
       if (!environment.production && environment.useFakeAuth) {
-        return AuthServiceFactory.makeFake(environment.fakeAuthConfig, router);
+        return AuthServiceFactory.makeFake(environment.fakeAuthConfig, router, jwt);
       }
       return AuthServiceFactory.makeOAuth2(
         {
@@ -27,6 +28,6 @@ export const authProviders: (Provider | EnvironmentProviders)[] = [
         oauthService
       );
     },
-    deps: [Router, OAuthService],
+    deps: [Router, OAuthService, JwtService],
   },
 ];

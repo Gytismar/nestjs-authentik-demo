@@ -8,6 +8,8 @@ import {
   PermissionStrings,
 } from '../user.entity';
 import { Router } from '@angular/router';
+import { JwtService } from '../jwt.service';
+import { encodeStateToBase64 } from '../utils/state.utils';
 
 export interface FakeAuthServiceConfig {
   /**
@@ -38,8 +40,11 @@ export class FakeAuthService implements AuthService {
 
   constructor(
     private config: FakeAuthServiceConfig,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly jwtService: JwtService
   ) {
+    jwtService.clearToken(); /* Clear any existing token to prevent format conflicts */
+
     if (!config.user) {
       config.user = {
         id: 'fake-user-id-123',
@@ -104,6 +109,7 @@ export class FakeAuthService implements AuthService {
 
   public logout(): Observable<void> {
     this.updateUser(null);
+    this.jwtService.clearToken();
 
     return of();
   }
@@ -111,6 +117,7 @@ export class FakeAuthService implements AuthService {
   private updateUser(user: User | null) {
     this.log('Current user updated:', user);
     this.currentUserSubject.next(user);
+    this.jwtService.saveToken(encodeStateToBase64(user));
   }
 
   private log(message: any, ...optionalParams: any[]) {

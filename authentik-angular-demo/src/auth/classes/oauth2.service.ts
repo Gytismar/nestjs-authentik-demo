@@ -170,7 +170,7 @@ export class OAuth2Service implements AuthService {
 
     if (this.isAtCallbackRoute()) {
       if (this.oauthService.state) {
-        const { returnTo } = this.decodeStateFromURIandBase64<{
+        const { returnTo } = decodeStateFromURIandBase64<{
           returnTo: string;
         }>(this.oauthService.state);
 
@@ -247,7 +247,7 @@ export class OAuth2Service implements AuthService {
 
         let additionalState: string | undefined;
         if (returnTo) {
-          additionalState = this.encodeStateToBase64({ returnTo });
+          additionalState = encodeStateToBase64({ returnTo });
         }
 
         this.oauthService.initCodeFlow(additionalState);
@@ -284,17 +284,6 @@ export class OAuth2Service implements AuthService {
     return from(logoutPromise);
   }
 
-  private encodeStateToBase64<T>(state: T): string {
-    const encodedString = btoa(JSON.stringify(state));
-    return encodedString;
-  }
-
-  private decodeStateFromURIandBase64<T>(encodedState: string): T {
-    const urlDecodedString = decodeURIComponent(encodedState);
-    const decodedObj = JSON.parse(atob(urlDecodedString)) as T;
-    return decodedObj;
-  }
-
   private updateCurrentUser() {
     this.log('Updating current user');
 
@@ -327,3 +316,11 @@ export class OAuth2Service implements AuthService {
     console.error('[OAuth2Service]', message, ...optionalParams);
   }
 }
+function encodeStateToBase64(arg0: { returnTo: string; }): string | undefined {
+  throw new Error('Function not implemented.');
+}
+
+function decodeStateFromURIandBase64<T>(state: string): { returnTo: any; } {
+  throw new Error('Function not implemented.');
+}
+
