@@ -17,7 +17,7 @@ export class AuthenticationGuard implements CanActivate {
     this.guardStrategy = guardStrategy;
   }
 
-  async canActivate(context: ExecutionContext) {
+  public async canActivate(context: ExecutionContext) {
     try {
       const canActivate = await this.guardStrategy.canActivate(context);
       if (!canActivate) {

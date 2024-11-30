@@ -63,9 +63,11 @@ export class FakeAuthenticationGuard implements CanActivate {
         ...this.options.userOverrides,
       };
     }
+
+    this.logger.warn('Using FakeAuthenticationGuard strategy');
   }
 
-  async canActivate(context: ExecutionContext) {
+  public async canActivate(context: ExecutionContext) {
     try {
       if (!this.options.isAuthorized) {
         return false;
@@ -76,8 +78,14 @@ export class FakeAuthenticationGuard implements CanActivate {
       let user: User;
 
       if (authorizationHeader && authorizationHeader.startsWith('Bearer ')) {
-        const fakeToken = authorizationHeader.split(' ')[1];
-        const tokenPayload = this.decodeBase64Token(fakeToken);
+        let tokenPayload;
+        try {
+          const fakeToken = authorizationHeader.split(' ')[1];
+          tokenPayload = this.decodeBase64Token(fakeToken);
+        } catch (error) {
+          this.logger.error('Malformed token', error.message);
+          return false;
+        }
 
         try {
           user = FakePayloadMapper.payload2User(tokenPayload);
