@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { HasPermission, Roles } from './auth/auth.decorators';
-import { AuthorizationGuard } from './auth/guards/authorization.guard';
+import { AuthenticationGuard } from './auth/guards/authentication.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
 import { Permission } from './auth/user.entity';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -16,33 +16,33 @@ export class AppController {
   }
 
   @Get('/api/only-for-viewer')
-  @UseGuards(AuthorizationGuard, RolesGuard)
+  @UseGuards(AuthenticationGuard, RolesGuard)
   @Roles('viewer')
   viewerOnly() {
     return 'This is only for viewers';
   }
 
   @Get('/api/only-for-manager')
-  @UseGuards(AuthorizationGuard, RolesGuard)
+  @UseGuards(AuthenticationGuard, RolesGuard)
   @Roles('manager')
   managerOnly() {
     return 'This is only for managers';
   }
 
-  @UseGuards(AuthorizationGuard)
+  @UseGuards(AuthenticationGuard)
   @Get('/api/for-any-authenticated-user')
   anyAuthenticated() {
     return 'This is for any authenticated user';
   }
 
-  @UseGuards(AuthorizationGuard, PermissionGuard)
+  @UseGuards(AuthenticationGuard, PermissionGuard)
   @HasPermission(Permission.ReadTitleDetails)
   @Get('/api/can-read-title-details')
   getTitleDetails() {
     return 'This is for those that can read title details';
   }
 
-  @UseGuards(AuthorizationGuard, PermissionGuard)
+  @UseGuards(AuthenticationGuard, PermissionGuard)
   @HasPermission(Permission.ReadTitles)
   @Get('/api/can-read-titles')
   getTitles() {
