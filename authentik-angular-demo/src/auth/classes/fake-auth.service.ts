@@ -47,7 +47,7 @@ export class FakeAuthService implements AuthService {
 
     if (!config.user) {
       config.user = {
-        id: 'fake-user-id-123',
+        id: 'mrfake-user-id-123',
         username: 'mrfake',
         email: 'mrfaker@fake.mail',
         roles: [...Object.values(Role)],
